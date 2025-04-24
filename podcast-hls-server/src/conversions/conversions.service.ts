@@ -107,6 +107,7 @@ export class ConversionsService {
         let segmentCount = 0;
         const expectedSegments =
           Math.ceil(wavFileLength / this.SEGMENT_SIZE) + 1;
+
         const watcher = chokidar.watch(currentConversionPath, {
           persistent: true,
           ignoreInitial: true,

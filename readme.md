@@ -38,6 +38,7 @@ npm run dev
 
 - WebSocket + socket.io - for client continues updates
 - FFmpeg - for file conversion
+- chokidar - for tracking ts files generation
 - nestjs - as the framework
 
 ### Frontend is using:
