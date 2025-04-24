@@ -12,6 +12,7 @@ const ConvertWavPage: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [buttonTexst, setButtonText] = useState("Start HLS Conversion");
   const [currentFile, setCurrentFile] = useState<File | null>(null);
+  const [progress, setProgress] = useState<number>(0);
 
   enum ConversionStatus {
     PROCESSING = "processing",
@@ -39,12 +40,18 @@ const ConvertWavPage: React.FC = () => {
             break;
           case ConversionStatus.COMPLETED:
           case ConversionStatus.ERROR:
+            setProgress(0);
             setIsProcessing(false);
             break;
         }
         setMessage(data.message);
       }
     );
+
+    socketInstance.on("conversionProgress", (data: { progress: number }) => {
+      const percentageProgress = Math.round(data.progress * 100);
+      setProgress(percentageProgress);
+    });
 
     return () => {
       socketInstance.disconnect();
@@ -125,11 +132,35 @@ const ConvertWavPage: React.FC = () => {
           </section>
         )}
       </Dropzone>
+
       <p>
         current file name:{" "}
         {currentFile != null ? currentFile.name : "inputFile.wav"}
       </p>
-      {isProcessing && <p style={{ color: "#2bd17e" }}>{message}</p>}
+
+      {isProcessing && (
+        <>
+          <p style={{ color: "#2bd17e" }}>{message}</p>{" "}
+          <div
+            style={{
+              width: "100%",
+              backgroundColor: "#7c1717",
+              borderRadius: "5px",
+              overflow: "hidden",
+              margin: "20px 0",
+            }}
+          >
+            <div
+              style={{
+                width: `${progress}%`,
+                backgroundColor: "#3c21b3",
+                height: "20px",
+                transition: "width 0.1s ease",
+              }}
+            ></div>
+          </div>
+        </>
+      )}
     </div>
   );
 };

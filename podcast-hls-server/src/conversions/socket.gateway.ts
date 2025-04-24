@@ -47,4 +47,10 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       message,
     });
   }
+
+  sendconversionProgress(clientId: string, progress: number) {
+    this.sendToClient(clientId, 'conversionProgress', {
+      progress,
+    });
+  }
 }
