@@ -1,5 +1,6 @@
 import {
   Controller,
+  Headers,
   Post,
   UploadedFile,
   UseInterceptors,
@@ -13,8 +14,13 @@ export class ConversionsController {
 
   @Post('process-hls')
   @UseInterceptors(FileInterceptor('file'))
-  async convertWavToHls(@UploadedFile() file: Express.Multer.File) {
-    const res = await this.conversionsService.simpleConvertWavToHls(file);
+  async convertWavToHls(
+    @UploadedFile() file: Express.Multer.File,
+    @Headers('client-id') clientId: string,
+  ) {
+    console.log('Client ID:', clientId);
+
+    const res = await this.conversionsService.ConvertWavToHls(file, clientId);
     return { fileName: res };
   }
 }

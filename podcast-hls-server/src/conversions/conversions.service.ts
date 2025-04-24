@@ -2,18 +2,33 @@ import { Injectable } from '@nestjs/common';
 import * as ffmpeg from 'fluent-ffmpeg';
 import * as path from 'path';
 import * as fs from 'fs';
+import { ConversionStatus, SocketGateway } from './socket.gateway';
 
 @Injectable()
 export class ConversionsService {
+  constructor(private readonly socketGateway: SocketGateway) {}
+
   private OUTPUT_DIR = path.join(process.cwd(), '..', 'output');
   private INPUT_DIR = path.join(process.cwd(), '..', 'input');
 
-  async simpleConvertWavToHls(file: Express.Multer.File): Promise<string> {
-    const fileName = await this.saveInputFile(file);
-    return await this.convertWithFfmpeg(fileName);
+  async ConvertWavToHls(
+    file: Express.Multer.File,
+    clientId: string,
+  ): Promise<string> {
+    const fileName = await this.saveInputFile(file, clientId);
+    return await this.convertWithFfmpeg(fileName, clientId);
   }
 
-  private async saveInputFile(file: Express.Multer.File): Promise<string> {
+  private async saveInputFile(
+    file: Express.Multer.File,
+    clientId: string,
+  ): Promise<string> {
+    this.socketGateway.sendConversionStatus(
+      clientId,
+      ' preparing files...',
+      ConversionStatus.PROCESSING,
+    );
+
     if (!fs.existsSync(this.INPUT_DIR)) {
       fs.mkdirSync(this.INPUT_DIR, { recursive: true });
     }
@@ -38,7 +53,16 @@ export class ConversionsService {
     }
   }
 
-  private async convertWithFfmpeg(fileName: string): Promise<string> {
+  private async convertWithFfmpeg(
+    fileName: string,
+    clientId: string,
+  ): Promise<string> {
+    this.socketGateway.sendConversionStatus(
+      clientId,
+      ' last checks...',
+      ConversionStatus.PROCESSING,
+    );
+
     const inputPath = path.join(process.cwd(), '../input', fileName);
     const fileNameWithoutExtension = fileName.split('.')[0];
     const currentConversionPath = path.join(
@@ -68,36 +92,44 @@ export class ConversionsService {
       segmentFilename,
     );
 
-    console.log(
-      `Starting HLS conversion for ${inputPath} -> ${currentConversionPath}`,
-    );
-
     return new Promise((resolve, reject) => {
       ffmpeg(inputPath)
         .outputOptions([
-          '-c:a aac', // Audio codec: AAC
-          '-b:a 128k', // Audio bitrate: 128kbps (adjust if needed)
-          '-f hls', // Output format: HLS
-          '-hls_time 10', // Segment duration: 10 seconds
-          '-hls_playlist_type vod', // Playlist type: Video On Demand
-          `-hls_segment_filename ${segmentOutputPathPattern}`, // Segment file naming pattern
+          '-c:a aac',
+          '-b:a 128k',
+          '-f hls',
+          '-hls_time 5', // seconds set on 5 to make loading time longer and status changes more visible
+          '-hls_playlist_type vod',
+          `-hls_segment_filename ${segmentOutputPathPattern}`, // Segment names
         ])
-        // --- Output File ---
-        .output(outputPlaylistPath) // Master playlist file
-
-        // --- Event Handlers ---
+        .output(outputPlaylistPath)
+        .on('start', () => {
+          this.socketGateway.sendConversionStatus(
+            clientId,
+            ' converting...',
+            ConversionStatus.PROCESSING,
+          );
+        })
         .on('end', () => {
-          console.log(`FFmpeg process finished successfully for ${inputPath}.`);
-          resolve(outputPlaylistName); // Resolve with the playlist path
+          this.socketGateway.sendConversionStatus(
+            clientId,
+            ' completed',
+            ConversionStatus.COMPLETED,
+          );
+
+          resolve(outputPlaylistName);
         })
         .on('error', (err) => {
           console.error(
             `FFmpeg error during conversion for ${inputPath}: ${err.message}`,
           );
-          reject(new Error(`FFmpeg conversion failed: ${err.message}`)); // Reject on error
+          this.socketGateway.sendConversionStatus(
+            clientId,
+            ' completed',
+            ConversionStatus.ERROR,
+          );
+          reject(new Error(`FFmpeg conversion failed: ${err.message}`));
         })
-
-        // --- Run FFmpeg ---
         .run();
     });
   }
