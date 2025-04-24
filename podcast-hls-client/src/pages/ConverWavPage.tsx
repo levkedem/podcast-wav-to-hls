@@ -9,6 +9,7 @@ const ConvertWavPage: React.FC = () => {
   const [clientId, setClientId] = useState<string>("");
   const [message, setMessage] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [buttonTexst, setButtonText] = useState("Start HLS Conversion");
 
   enum ConversionStatus {
     PROCESSING = "processing",
@@ -32,7 +33,9 @@ const ConvertWavPage: React.FC = () => {
       (data: { status: string; message: string }) => {
         if (data.status === ConversionStatus.PROCESSING) {
           setIsProcessing(true);
-        } else {
+        } else if (data.status === ConversionStatus.COMPLETED) {
+          setIsProcessing(false);
+        } else if (data.status === ConversionStatus.ERROR) {
           setIsProcessing(false);
         }
         setMessage(data.message);
@@ -46,6 +49,7 @@ const ConvertWavPage: React.FC = () => {
 
   const handleConvert = async () => {
     try {
+      setButtonText("in process");
       const formData = new FormData();
       const response = await fetch("/inputFile.wav");
       const blob = await response.blob();
@@ -60,8 +64,13 @@ const ConvertWavPage: React.FC = () => {
           },
         }
       );
+
       toast.success(`new playlist name: ${uploadResponse.data.fileName}`);
+
+      setButtonText("Done! (click to convert again)");
     } catch (error) {
+      setButtonText("we had an error :( (click to convert again)");
+
       console.error("Error during conversion:", error);
       toast.error(
         "error during conversion: " + isAxiosError(error)
@@ -75,7 +84,7 @@ const ConvertWavPage: React.FC = () => {
     <div>
       <h1>wav converter</h1>
       <Button
-        label={isProcessing ? "in process" : "Start HLS Conversion"}
+        label={buttonTexst}
         onClick={() => {
           handleConvert();
         }}
