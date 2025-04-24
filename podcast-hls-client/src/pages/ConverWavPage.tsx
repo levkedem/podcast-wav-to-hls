@@ -31,12 +31,14 @@ const ConvertWavPage: React.FC = () => {
     socketInstance.on(
       "conversionUpdate",
       (data: { status: string; message: string }) => {
-        if (data.status === ConversionStatus.PROCESSING) {
-          setIsProcessing(true);
-        } else if (data.status === ConversionStatus.COMPLETED) {
-          setIsProcessing(false);
-        } else if (data.status === ConversionStatus.ERROR) {
-          setIsProcessing(false);
+        switch (data.status) {
+          case ConversionStatus.PROCESSING:
+            setIsProcessing(true);
+            break;
+          case ConversionStatus.COMPLETED:
+          case ConversionStatus.ERROR:
+            setIsProcessing(false);
+            break;
         }
         setMessage(data.message);
       }
