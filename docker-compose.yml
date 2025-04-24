@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+  backend:
+    build:
+      context: ./podcast-hls-server
+      dockerfile: dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - frontend
+
+  frontend:
+    build:
+      context: ./podcast-hls-client
+      dockerfile: dockerfile
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://backend:3000
+    volumes:
+      - ./podcast-hls-client:/app
+      - /app/node_modules

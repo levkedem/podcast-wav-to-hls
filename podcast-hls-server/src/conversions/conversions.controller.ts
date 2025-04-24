@@ -18,8 +18,6 @@ export class ConversionsController {
     @UploadedFile() file: Express.Multer.File,
     @Headers('client-id') clientId: string,
   ) {
-    console.log('Client ID:', clientId);
-
     const res = await this.conversionsService.ConvertWavToHls(file, clientId);
     return { fileName: res };
   }
