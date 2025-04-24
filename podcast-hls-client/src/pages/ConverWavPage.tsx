@@ -75,11 +75,12 @@ const ConvertWavPage: React.FC = () => {
     <div>
       <h1>wav converter</h1>
       <Button
-        label={isProcessing ? message : "Start HLS Conversion"}
+        label={isProcessing ? "in process" : "Start HLS Conversion"}
         onClick={() => {
           handleConvert();
         }}
       />
+      {isProcessing && <p>{message}</p>}
     </div>
   );
 };
