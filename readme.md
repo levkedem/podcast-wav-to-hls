@@ -12,6 +12,10 @@
 
 - FFmpeg installed on your system is needed
 
+## run with docker-compose:
+
+docker-compose up --build
+
 ### run backend (Server)
 
 cd podcast-hls-server
